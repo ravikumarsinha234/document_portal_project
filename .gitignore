@@ -1,3 +1,6 @@
 env
 .env
 document_portal_genai_project.egg-info
+notebook/logs/
+__pycache__/
+logs/
