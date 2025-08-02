@@ -13,7 +13,7 @@ class DocumentHandler:
 
     def __init__(self, data_dir=None,session_id=None):
         try:
-            self.log = CustomLogger().get_logger(__file__)
+            self.log = CustomLogger().get_logger(__name__)
             self.data_dir = data_dir or os.getenv("DATA_STORAGE_PATH",os.path.join(os.getcwdd(),"data","document_analysis"))
             self.session_id = session_id or f"session_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}"
 
@@ -29,7 +29,17 @@ class DocumentHandler:
 
     def save_pdf(self,uploaded_file):
         try:
-            pass
+            filename = os.path.basename(uploaded_file.name)
+
+            if not filename.lower().endswith('.pdf'):
+                raise DocumentPortalException("Invalid file type. Only PDFs are allowed", sys)
+            save_path = os.path.join(self.session_path, filename)
+
+            with open(save_path, 'wb') as f:
+                f.write(uploaded_file.getbuffer())
+            self.log.info("PDF saved successfully", filename=filename, save_path=save_path,session_id=self.session_id)
+            return save_path
+        
         except Exception as e:
             self.log.error("Error saving PDF", error=str(e))
             raise DocumentPortalException(f"Failed to save PDF", sys)

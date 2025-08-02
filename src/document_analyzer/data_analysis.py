@@ -16,7 +16,7 @@ class DocumentAnalyzer:
     """
 
     def __init__(self):
-        self.log = CustomLogger().get_logger(__file__)
+        self.log = CustomLogger().get_logger(__name__)
         try:
             self.loader = ModelLoader()
             self.llm = self.loader.load_llm()
@@ -32,7 +32,7 @@ class DocumentAnalyzer:
             self.log.error(f"Error initializing DocumentAnalyzer: {e}")
             raise DocumentPortalException("Error in DocumentAnalyzer initialization", sys)
 
-    def analyze_metadata(self, document_text: str) -> dict:
+    def analyze_document(self, document_text: str) -> dict:
         """
         Analyze a document's text and extract structured metadata & summary.
         """
