@@ -1,5 +1,6 @@
 import os
 import fitz
+import sys
 import uuid
 from datetime import datetime
 from logger.custom_logger import CustomLogger
@@ -14,7 +15,7 @@ class DocumentHandler:
     def __init__(self, data_dir=None,session_id=None):
         try:
             self.log = CustomLogger().get_logger(__name__)
-            self.data_dir = data_dir or os.getenv("DATA_STORAGE_PATH",os.path.join(os.getcwdd(),"data","document_analysis"))
+            self.data_dir = data_dir or os.getenv("DATA_STORAGE_PATH",os.path.join(os.getcwd(),"data","document_analysis"))
             self.session_id = session_id or f"session_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}"
 
             # Create base session directory
@@ -47,14 +48,16 @@ class DocumentHandler:
     def read_pdf(self,pdf_path:str)-> str:
         try:
             text_chunks = []
-            with fitz.open(self.data_dir) as doc:
-                for page in doc:
-                    text = page.get_text()
-                    if text:
-                        text_chunks.append(text)
+            with fitz.open(pdf_path) as doc:
+                for page_num,page in enumerate(doc,start=1):
+                    text_chunks.append(f"\n--- Page {page_num} ---\n{page.get_text()}")
+            text = "\n".join(text_chunks)
+
+            self.log.info("PDF read successfully", pdf_path=pdf_path, session_id=self.session_id,pages=len(text_chunks))
+            return text
         except Exception as e:
-            self.log.error("Error reading PDF", error=str(e))
-            raise DocumentPortalException(f"Failed to read PDF", sys)
+            self.log.error("Error reading PDF: {e}")
+            raise DocumentPortalException(f"Failed to read PDF", e) from e
         
 
 if __name__ == "__main__":
@@ -62,29 +65,26 @@ if __name__ == "__main__":
     from io import BytesIO
     handler =DocumentHandler()
 
-    pdf_path = r"C:\\Users"
+    pdf_path = r"D:\portfolio projects details\LLMOPs_Projects\document_portal_project\data\document_analysis\sample.pdf"
 
     class DummyFile:
-        def __init__(self, path):
+        def __init__(self, file_path):
             self.name = Path(file_path).name
             self._file_path = file_path
         def getbuffer(self):
             return open(self._file_path, 'rb').read()
-        
+    
+    dummy_pdf = DummyFile(pdf_path)
 
-
-        def read(self):
-            return b"%PDF-1.4\n%...dummy PDF content..."
+    handler = DocumentHandler()
 
     try:
-        handler = DocumentHandler()
-        # Simulate saving a PDF
-        handler.save_pdf(pdf_data="Sample PDF data")
-        # Simulate reading a PDF
-        handler.read_pdf()
-    except DocumentPortalException as e:
-        handler.log.error(e)
-        raise e
+        saved_path = handler.save_pdf(dummy_pdf)
+        print(saved_path)
+
+        content = handler.read_pdf(saved_path)
+        print("PDF Content:")
+        print(content[:500])  # Print first 500 characters for brevity
+    
     except Exception as e:
-        handler.log.error("An unexpected error occurred", error=str(e))
-        raise DocumentPortalException(f"An unexpected error occurred", sys)
+        print(f"Error:{e}")
